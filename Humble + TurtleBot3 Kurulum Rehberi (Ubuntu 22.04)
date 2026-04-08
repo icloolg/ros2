@@ -1,0 +1,172 @@
+#  ROS 2 Humble + TurtleBot3 Kurulum Rehberi (Ubuntu 22.04)
+
+Bu rehber, Ubuntu 22.04 üzerinde ROS 2 Humble ve TurtleBot3 simülasyonunu sıfırdan kurma adımlarını kapsamaktadır.
+
+---
+
+## 📋 Gereksinimler
+
+- Ubuntu 22.04 LTS
+- Minimum 4 GB RAM (sanal makine için)
+- VMware veya VirtualBox
+
+---
+
+## 🔧 Adım 1 — ROS 2 Humble Repository Ekleme
+
+ROS 2 paketleri varsayılan Ubuntu depolarında bulunmaz. Önce resmi depoyu eklemeliyiz.
+
+```bash
+# Gerekli araçları kur
+sudo apt install curl gnupg lsb-release
+
+# ROS 2 GPG anahtarını ekle
+sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \
+  -o /usr/share/keyrings/ros-archive-keyring.gpg
+
+# ROS 2 deposunu kayıt et
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] \
+  http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" \
+  | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
+
+# Paket listesini güncelle
+sudo apt update
+```
+
+---
+
+## 📦 Adım 2 — ROS 2 Humble Kurulumu
+
+```bash
+# Tam masaüstü kurulum (launch, rviz, gazebo araçlarını içerir)
+sudo apt install ros-humble-desktop
+```
+
+---
+
+## 🐢 Adım 3 — TurtleBot3 Paketlerini Kurma
+
+```bash
+# TurtleBot3 tüm paketleri
+sudo apt install ros-humble-turtlebot3*
+
+# Klavye ile kontrol için teleop paketi
+sudo apt install ros-humble-turtlebot3-teleop
+```
+
+---
+
+## ⚙️ Adım 4 — Ortam Değişkenlerini Kalıcı Olarak Ayarlama
+
+Her terminal açışında tekrar tekrar komut yazmamak için `.bashrc` dosyasına ekleyelim:
+
+```bash
+# ROS 2 ortamını otomatik yükle
+echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
+
+# Sanal makine için yazılımsal GPU (VMware/VirtualBox)
+echo "export LIBGL_ALWAYS_SOFTWARE=1" >> ~/.bashrc
+
+# TurtleBot3 robot modeli (burger | waffle | waffle_pi)
+echo "export TURTLEBOT3_MODEL=burger" >> ~/.bashrc
+
+# Gazebo model yolunu ekle
+echo "export GAZEBO_MODEL_PATH=/opt/ros/humble/share/turtlebot3_gazebo/models:\$GAZEBO_MODEL_PATH" >> ~/.bashrc
+
+# Değişiklikleri uygula
+source ~/.bashrc
+```
+
+> **Not:** `LIBGL_ALWAYS_SOFTWARE=1` sanal makinelerde Gazebo'nun GPU yerine CPU kullanmasını sağlar.
+> Gerçek donanımda bu satırı eklemenize gerek yoktur.
+
+---
+
+## 🌍 Adım 5 — Gazebo Simülasyonunu Başlatma
+
+```bash
+# Boş dünya (hafif, önerilir)
+ros2 launch turtlebot3_gazebo empty_world.launch.py
+
+# TurtleBot3 dünyası (daha ağır)
+ros2 launch turtlebot3_gazebo turtlebot3_world.launch.py
+```
+
+---
+
+## 🎮 Adım 6 — Klavye ile Robot Kontrolü
+
+Yeni bir terminal açarak:
+
+```bash
+ros2 run turtlebot3_teleop teleop_keyboard
+```
+
+| Tuş | Hareket |
+|-----|---------|
+| `W` | İleri |
+| `S` | Geri |
+| `A` | Sol |
+| `D` | Sağ |
+| `Space` | Dur |
+
+---
+
+## 🐛 Sık Karşılaşılan Hatalar ve Çözümler
+
+### `ros2: command not found`
+ROS 2 ortamı yüklenmemiş. Çözüm:
+```bash
+source /opt/ros/humble/setup.bash
+# Kalıcı için: echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
+```
+
+### `Package not found` / `Unable to locate package`
+ROS 2 deposu eklenmemiş. Adım 1'i tekrar uygulayın.
+
+### `ros2 launch` komutu yok
+```bash
+sudo apt install ros-humble-desktop
+```
+
+### `spawn_entity.py` hatası / Gazebo donuyor
+- RAM yetersiz (minimum 4 GB gerekli)
+- Sanal makine 3D hızlandırmayı kapatın
+- `LIBGL_ALWAYS_SOFTWARE=1` ayarlayın
+
+### Gazebo süreçleri takılı kaldı
+```bash
+killall gzserver gzclient
+```
+
+### Swap ile RAM artırma (4 GB RAM yoksa)
+```bash
+sudo swapoff -a
+sudo fallocate -l 4G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+```
+
+---
+
+## 📌 Hızlı Başvuru
+
+```bash
+# Her şeyi sıfırla
+killall gzserver gzclient
+
+# Simülasyonu başlat
+ros2 launch turtlebot3_gazebo empty_world.launch.py
+
+# Robot kontrolü (yeni terminalde)
+ros2 run turtlebot3_teleop teleop_keyboard
+```
+
+---
+
+## 🔗 Kaynaklar
+
+- [ROS 2 Humble Resmi Dokümantasyon](https://docs.ros.org/en/humble/)
+- [TurtleBot3 Dokümantasyon](https://emanual.robotis.com/docs/en/platform/turtlebot3/overview/)
+- [Gazebo ROS 2 Entegrasyonu](https://gazebosim.org/docs)
